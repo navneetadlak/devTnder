@@ -1,18 +1,35 @@
 const express = require("express");
-const connectDB = require("./src/config/database")
+const connectDB = require("./src/config/database");
 const app = express();
+const User = require("./src/models/user");
+
+app.post("/signup", async (req, res) => {
+  // Creating a new instance of the user model
+  const user = new User({
+    firstName: "Navneet",
+    lastName: "Adlak",
+    emailId: "navneet.adlak264@gmail.com",
+    password: "123",
+  });
+
+  try {
+    await user.save();
+    res.send("user added successfully");
+  } catch (err) {
+    res.status(400).send("Error Saving the User:" + err.message);
+  }
+});
 
 connectDB()
-.then(()=>{
-  console.log("Database connection established"); 
-  app.listen(8000, () => {
-    console.log("Server is listening on port 8000");
+  .then(() => {
+    console.log("Database connection established");
+    app.listen(8000, () => {
+      console.log("Server is listening on port 8000");
+    });
+  })
+  .catch((err) => {
+    console.error("Database Cannot be connected");
   });
-})
-.catch((err)=>{
-  console.error("Database Cannot be connected");
-})
-
 
 //  const { adminAuth, userAuth } = require("./src/middlewares/auth")
 
@@ -51,5 +68,3 @@ connectDB()
 //  app.get('/admin/deleteUser', (req, res) => {
 //   res.send("Deleted a User")
 // });
-
-
