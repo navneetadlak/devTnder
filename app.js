@@ -2,16 +2,14 @@ const express = require("express");
 const connectDB = require("./src/config/database");
 const app = express();
 const User = require("./src/models/user");
+const req = require("express/lib/request");
 
 // convert javascript object to json
 app.use(express.json());
 
-
-
 app.post("/signup", async (req, res) => {
-
   // Creating a new instance of the user model
-const user = new User(req.body);
+  const user = new User(req.body);
 
   // Creating a new instance of the user model
   // const user = new User({
@@ -28,6 +26,54 @@ const user = new User(req.body);
     res.status(400).send("Error Saving the User:" + err.message);
   }
 });
+
+// API get user by email-Id
+app.get("/user", async (req, res) => {
+  const userEmail = req.body.emailId;
+  try {
+    const user = await User.findOne({ emailId: userEmail });
+    if (!user) {
+      res.status(404).send("User Not Found");
+    } else {
+      res.send(user);
+    }
+  } catch (err) {
+    res.send(400).send("Something went wrong");
+  }
+});
+
+// API feed -- get all user from the database
+app.get("/feed", async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.send(users);
+  } catch (err) {
+    res.status(400).send("Something Went wrong");
+  }
+});
+
+// Delete User Api to delete a user
+app.delete("/user", async (req, res)=>{
+  const userId = req.body.userId;
+  try{
+    const user = await User.findByIdAndDelete(userId);
+    res.send("User Deleted Successfully")
+  }catch (err){
+    res.status(400).send("Something Went Wrong")
+  }
+})
+
+// Update data of the user APi 
+app.patch("/user", async (req, res)=>{
+  const userId = req.body.userId;
+  const data = req.body;
+  try{
+    const user = await User.findByIdAndUpdate({ _id: userId }, data, { returnDocument: "after", });
+    res.send("User Updated Successfully");
+  }catch(err){
+    res.status(400).send("Something went wrong");
+  }
+})
 
 connectDB()
   .then(() => {
@@ -77,3 +123,13 @@ connectDB()
 //  app.get('/admin/deleteUser', (req, res) => {
 //   res.send("Deleted a User")
 // });
+
+// const sortArr = (strings) => {
+//   return strings.sort((a,b)=> b.length - a.length)
+// }
+
+// app.use('/', (req, res)=>{
+
+//   let result = sortArr(input.strings)
+//   res.send(result)
+// })
