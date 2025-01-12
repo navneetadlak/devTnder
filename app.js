@@ -13,12 +13,15 @@ app.post("/signup", async (req, res) => {
   try {
   // validation of data
   validateSignUpData(req)
-
+  const { firstName, lastName, emailId, password } = req.body;
 
   // encrypt the password
+  const passwordHash = await bcrypt.hash(password, 8);
 
   // Creating a new instance of the user model
-  const user = new User(req.body);
+  const user = new User({
+      firstName, lastName, emailId, password: passwordHash
+    });
 
   // Creating a new instance of the user model
   // const user = new User({
@@ -35,6 +38,28 @@ app.post("/signup", async (req, res) => {
     res.status(400).send("Error Saving the User:" + err.message);
   }
 });
+
+app.post('/login', async (req,res)=>{
+  try{
+    const {emailId, password} = req.body;
+
+    const user = await User.findOne({emailId: emailId});
+    if(!user){
+      throw new Error("Invalid Credentials")
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password )
+
+    if(isPasswordValid){
+      res.send("Login Successful")
+    }else{
+      throw new Error("Invalid Credentials")
+    }
+
+  } catch (err) {
+    res.status(400).send("Error Saving the User:" + err.message);
+  }
+})
 
 // API get user by email-Id
 app.get("/user", async (req, res) => {
