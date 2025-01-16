@@ -3,9 +3,10 @@ const connectDB = require("./src/config/database");
 const app = express();
 const User = require("./src/models/user");
 const req = require("express/lib/request");
-const { validateSignUpData } = require("./src/utils/validation")
+const { validateSignUpData } = require("./src/utils/validation");
 const bcrypt = require("bcrypt");
-const cookieParser = require("cookie-parser")
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 // convert javascript object to json
 app.use(express.json());
@@ -13,26 +14,20 @@ app.use(cookieParser());
 
 app.post("/signup", async (req, res) => {
   try {
-  // validation of data
-  validateSignUpData(req)
-  const { firstName, lastName, emailId, password } = req.body;
+    // validation of data
+    validateSignUpData(req);
+    const { firstName, lastName, emailId, password } = req.body;
 
-  // encrypt the password
-  const passwordHash = await bcrypt.hash(password, 8);
+    // encrypt the password
+    const passwordHash = await bcrypt.hash(password, 8);
 
-  // Creating a new instance of the user model
-  const user = new User({
-      firstName, lastName, emailId, password: passwordHash
+    // Creating a new instance of the user model
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: passwordHash,
     });
-
-  // Creating a new instance of the user model
-  // const user = new User({
-  //   firstName: "Navneet",
-  //   lastName: "Adlak",
-  //   emailId: "navneet.adlak264@gmail.com",
-  //   password: "123",
-  // });
-
 
     await user.save();
     res.send("user added successfully");
@@ -41,42 +36,52 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.post('/login', async (req,res)=>{
-  try{
-    const {emailId, password} = req.body;
+app.post("/login", async (req, res) => {
+  try {
+    const { emailId, password } = req.body;
 
-    const user = await User.findOne({emailId: emailId});
-    if(!user){
-      throw new Error("Invalid Credentials")
+    const user = await User.findOne({ emailId: emailId });
+    if (!user) {
+      throw new Error("Invalid Credentials");
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password )
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-    if(isPasswordValid){
-
+    if (isPasswordValid) {
       // create a JWT token
-
+      const token = await jwt.sign({ _id: user._id }, "DEV@Tinder$264");
       // add the token to cookies and send the response back to the user
-      res.cookie("token", "hfkahkfhuefhafhhfaofefhuefhefafekfauhfuhefye");
-      res.send("Login Successful")
-    }else{
-      throw new Error("Invalid Credentials")
+      res.cookie(token);
+      res.send("Login Successful");
+    } else {
+      throw new Error("Invalid Credentials");
     }
-
   } catch (err) {
     res.status(400).send("Error Saving the User:" + err.message);
   }
-})
+});
 
-app.get('/profile', async (req, res) => {
-  const cookies = req.cookies;
-
-  const {token} = cookies;
-  // validate my token
-
-  console.log(cookies);
-  res.send("Reading Cookies")
-})
+app.get("/profile", async (req, res) => {
+  try {
+    const cookies = req.cookies;
+    const { token } = cookies;
+    if (!token) {
+      throw new Error("Invalid Token");
+    }
+    // validate my token
+    const decodedMessage = await jwt.verify(token, "DEV@Tinder$264");
+    const { _id } = decodedMessage;
+    // console.log("Loggedin user is : " + _id);
+    const user = await User.findById(_id);
+    if (!user) {
+      throw new Error("User Does not exist");
+    }
+    // console.log(cookies);
+    res.send(user);
+  } catch (err) {
+    res.status(400).send("Error :" + err.message);
+  }
+});
 
 // API get user by email-Id
 app.get("/user", async (req, res) => {
