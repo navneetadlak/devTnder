@@ -82,3 +82,53 @@ connectDB()
   .catch((err) => {
     console.error("Database Cannot be connected");
   });
+
+  // Remove from Watchlist
+  const handleRemoveFromWatchlist = async (id: string) => {
+    try {
+      // Find the symbol to remove from the watchlist
+      const itemToRemove = watchlist.find((item) => item.id === id);
+      if (!itemToRemove) return; // If the item is not in the watchlist, do nothing
+
+      // Send POST request to Lambda function via API Gateway
+      const response = await axios.post(
+        "https://2gi08vgwv4.execute-api.ap-south-1.amazonaws.com/API/remove-watchlist", // Your API Gateway endpoint
+        {
+          email: user_email, // The user's email, can be dynamically retrieved if logged in
+          symbol: itemToRemove.symbol, // The symbol to remove from the watchlist
+        },
+        {
+          headers: {
+            "Content-Type": "application/json", // Content type
+          },
+        }
+      );
+
+      // Handle successful response
+      console.log(response.data.watchlist);
+      if (response.status === 200) {
+        const formattedWatchlist = response.data.watchlist.map(
+          (symbol: string) => {
+            const mockPrice = parseFloat((Math.random() * 1000).toFixed(2)); // Generate random price
+            const mockChange = parseFloat((Math.random() * 10 - 5).toFixed(2)); // Generate random change (-5 to +5)
+            return {
+              id: symbol, // Use the symbol as ID
+              symbol, // The stock symbol
+              companyName: symbol, // Reuse the symbol as the company name for now
+              exchange: "NSE", // Assuming all symbols are from the NSE exchange
+              price: mockPrice, // Assign random price
+              change: mockChange, // Assign random change
+            };
+          }
+        );
+
+        // Pass the formatted watchlist to the function
+        setWatchlist(formattedWatchlist);
+        // Update the watchlist in the frontend with the new list
+        console.log(response.data.message); // Log success message
+      }
+    } catch (error) {
+      console.error("Error removing from watchlist:", error);
+      // Handle any error that occurs
+    }
+  };
