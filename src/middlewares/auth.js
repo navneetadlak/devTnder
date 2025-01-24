@@ -13,7 +13,7 @@ const adminAuth = (req, res, next)=>{
     }
   }
 
-  const userAuth = (req, res, next)=>{
+  const userAuth = async (req, res, next)=>{
     console.log("User auth is getting Checked!!");
     // read the token from the request cookies
     try{
